@@ -52,6 +52,7 @@
 			var stats;
 			var camera, scene, renderer;
 			var clock = new THREE.Clock();
+			var lights = [];
 
 			init();
 
@@ -78,43 +79,61 @@
         //orbitControls.autoRotate = true;
 
 				// Lights
-				var ambiLight = new THREE.AmbientLight(0xffffff);
+				var ambiLight = new THREE.AmbientLight(0x333333);
         scene.add(ambiLight);
 
-				var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.5 );
-				directionalLight.position.set( -4, -4, -4 ).normalize();
+				var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+				directionalLight.position.set(5,5,5);
+				directionalLight.castShadow = true;
 				scene.add( directionalLight );
 
 				// Axis and Grid
-				var axis = new THREE.AxisHelper(20);
+				scene.add( new THREE.AxisHelper(20));
 				scene.add( new THREE.GridHelper(10,1));
 
 				// Load and Add dear Brad!
 				var loader = new THREE.JSONLoader();
 				//var loadFile = "./models/threejs/monkey_geo.json";
-				var loadFile = "./models/threejs/brad3.json";
+				//var loadFile = "./models/threejs/brad3.json";
+				var loadFile = "./models/json/brad.json";
 				loader.load( loadFile, function (geometry, materials) {
+
+					// Override materials to speed up rendering!
+					for(var i=0; i<materials.length; i++){
+						//materials[i].map = null;
+						//materials[i].shading = THREE.NoShading;
+						//materials[i].color = new THREE.Color(0xFFCC66);
+						materials[i] = new THREE.MeshLambertMaterial({name:materials[i].name, color: materials[i].color});
+					}
 
 					var brad = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
 
-					//camera.lookAt(brad.position);
-          // add the mesh
+					// Point the light(s) toward dear Brad!
+					directionalLight.target = brad;
+
+					// And the camera!
+					camera.lookAt(brad.position);
+
+          // Add the mesh
           scene.add(brad);
+
+					// Check if he has skeleton or just flesh!
+					console.log(brad.skeleton)
 
 				} );
 
 
 				// create a sphere for fun - try to put it in front of Brad !
-				var sphereGeometry = new THREE.SphereGeometry(0.5, 20, 20);
-				var sphere = new THREE.Mesh(sphereGeometry, new THREE.MeshBasicMaterial({color: 0x7777ff}));
+				var sphereGeometry = new THREE.SphereGeometry(0.10, 20, 20);
+				var sphere = new THREE.Mesh(sphereGeometry, new THREE.MeshLambertMaterial({color: 0xa3a3a3}));
 
 				// position the sphere
 				sphere.position.x = 0;
-				sphere.position.y = -2;
-				sphere.position.z = 1;
+				sphere.position.y = 0.5;
+				sphere.position.z = 2;
 
 				// add the sphere to the scene
-				//scene.add(sphere);
+				scene.add(sphere);
 
 				// Stats to show how slow we are!
 				stats = new Stats();
@@ -147,6 +166,8 @@
 
 					renderer.render( scene, camera );
 				}
+
+
 
 				function onWindowResize() {
 
