@@ -68,7 +68,7 @@
 
 				// Renderer
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setClearColor( 0xfff4e5 );
+				renderer.setClearColor( 0x666666 );
 				//renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.sortObjects = false;
@@ -91,6 +91,9 @@
 				scene.add( new THREE.AxisHelper(20));
 				scene.add( new THREE.GridHelper(10,1));
 
+				// Override materials in easier way! faster rendering already!
+				scene.overrideMaterial = new THREE.MeshLambertMaterial({color: 0xffe0bd});
+
 				// Load and Add dear Brad!
 				var loader = new THREE.JSONLoader();
 				//var loadFile = "./models/threejs/monkey_geo.json";
@@ -98,12 +101,11 @@
 				var loadFile = "./models/json/brad.json";
 				loader.load( loadFile, function (geometry, materials) {
 
-					// Override materials to speed up rendering!
 					for(var i=0; i<materials.length; i++){
 						//materials[i].map = null;
 						//materials[i].shading = THREE.NoShading;
 						//materials[i].color = new THREE.Color(0xFFCC66);
-						materials[i] = new THREE.MeshLambertMaterial({name:materials[i].name, color: materials[i].color});
+						//materials[i] = new THREE.MeshLambertMaterial({name:materials[i].name, color: materials[i].color});
 					}
 
 					var brad = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
@@ -118,7 +120,7 @@
           scene.add(brad);
 
 					// Check if he has skeleton or just flesh!
-					console.log(brad.skeleton)
+					console.log(brad.skeleton);
 
 				} );
 
