@@ -22,3 +22,14 @@ lights[3].position.set(5,5,-5);
 _.each(lights, function(t){
   this.target = brad;
   });
+
+
+Q. How much fast is SmartBody simulation? and when do these calculations occur actually?
+
+
+Python floating point hell!
+http://stackoverflow.com/a/455634/1461232
+
+
+looks like there is a bug in json.dumps which might be called from Python print to dictionaries
+use https://github.com/esnme/ultrajson instead!

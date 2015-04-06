@@ -31,30 +31,33 @@
 	</head>
 	<body>
 
+		<div id="Stats-output"></div>
 		<div id="container"></div>
 
 		<div id="info">
-		<a href="http://threejs.org" target="_blank">three.js</a> webgl - collada - skinning
+			<a href="http://threejs.org" target="_blank">three.js</a> Dear Brad!
 		</div>
 
-		<script src="../libs/three.js"></script>
-		<script src="../libs/OrbitControls.js"></script>
+		<script src="js/three.js"></script>
+		<script src="js/OrbitControls.js"></script>
 
 		<script src="js/Detector.js"></script>
 		<script src="js/lodash.js"></script>
 		<script src="js/stats.min.js"></script>
 		<script src="js/dat.gui.js"></script>
 
+		<script src="js/socket.io.js"></script>
+
 		<script>
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
-			var stats;
 			var camera, scene, renderer;
 			var clock = new THREE.Clock();
-			var lights = [];
 
-			init();
+			var stats = initStats();
+			var bradControls = initControls();
+			var socket = initSockets();
 
 			function init() {
 
@@ -108,7 +111,7 @@
 						//materials[i] = new THREE.MeshLambertMaterial({name:materials[i].name, color: materials[i].color});
 					}
 
-					var brad = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+					var brad = new THREE.SkinnedMesh( geometry, new THREE.MeshFaceMaterial( materials ) );
 
 					// Point the light(s) toward dear Brad!
 					directionalLight.target = brad;
@@ -137,24 +140,8 @@
 				// add the sphere to the scene
 				scene.add(sphere);
 
-				// Stats to show how slow we are!
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.top = '0px';
-				container.appendChild( stats.domElement );
-
 				// Controls
         var step = 0;
-
-				var controls = new function () {
-            this.rotationSpeed = 0.02;
-        };
-
-        var gui = new dat.GUI();
-        gui.add(controls, 'rotationSpeed', 0, 0.5);
-        //gui.add(controls, 'bouncingSpeed', 0, 0.5);
-
-				window.addEventListener( 'resize', onWindowResize, false );
 
 				renderLoop();
 
@@ -169,8 +156,6 @@
 					renderer.render( scene, camera );
 				}
 
-
-
 				function onWindowResize() {
 
 					camera.aspect = window.innerWidth / window.innerHeight;
@@ -178,9 +163,54 @@
 
 					renderer.setSize( window.innerWidth, window.innerHeight );
 				}
+				window.addEventListener( 'resize', onWindowResize, false );
 			}
 
+			function initStats(){
+				// Stats to show how slow we are!
+				var stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				document.getElementById( 'Stats-output' ).appendChild( stats.domElement );
+				return stats;
+			}
 
+			function initControls(){
+				bradControls = new function () {
+            this.animationSpeed = 0.02;
+						this.standIdle = function(){
+							socket.emit('play bml', {data: 'idle'});
+						}
+						this.playGuitar = function(){
+							socket.emit('play bml', {data: 'play_guitar'});
+						}
+        };
+
+        var gui = new dat.GUI();
+				gui.add(bradControls, 'animationSpeed', 0, 0.5);
+				gui.add(bradControls, 'standIdle');
+				gui.add(bradControls, 'playGuitar');
+			}
+
+			function initSockets(){
+				var namespace = '/test'; // change to an empty string to use the global namespace
+
+				// the socket.io documentation recommends sending an explicit package upon connection
+				// this is specially important when using the global namespace
+				var sock = io.connect('http://' + document.domain + ':' + location.port + namespace);
+
+				// event handler for server sent data
+				// the data is displayed in the "Received" section of the page
+				sock.on('boneUpdate', function(msg) {
+						console.log('Received #' + msg.count + ': ' + msg.data);
+				});
+				return sock;
+			}
+
+			window.onload = function(){
+				init();
+
+			}
 
 		</script>
 
