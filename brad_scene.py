@@ -41,7 +41,7 @@ def SrQuatToWXYZ(s):
 
 class SbSceneWorkerTask(threading.Thread):
     """SbSceneWorkerTask"""
-    def __init__(self, id, context):
+    def __init__(self, context, id):
         self.zcontext = context
         self.id = id
         threading.Thread.__init__ (self)
@@ -237,7 +237,7 @@ class SbSceneWorkerTask(threading.Thread):
 
     def update_scene_dt(self,dt):
         self.scene.update()
-        self.sim.setTime(sim.getTime()+dt)
+        self.sim.setTime(self.sim.getTime()+dt)
 
 
     def get_character_bonedata(cname):
@@ -278,7 +278,7 @@ class SbSceneWorkerTask(threading.Thread):
 
 
     def run(self):
-        context = self.zcontext()
+        context = self.zcontext
         socket = context.socket(zmq.REQ)
         identity = u"Worker-{}".format(self.id)
         socket.identity = identity.encode('ascii')
@@ -311,7 +311,7 @@ class TestSceneClientTask(threading.Thread):
         threading.Thread.__init__ (self)
 
     def run(self):
-        context = self.zcontext()
+        context = self.zcontext
         socket = context.socket(zmq.REQ)
         socket.identity = u"TestClient-{}".format(self.id).encode("ascii")
         socket.connect("inproc://frontend")
@@ -338,7 +338,7 @@ class SceneRouterTask(threading.Thread):
         threading.Thread.__init__ (self)
 
     def run(self):
-        context = self.zcontext()
+        context = self.zcontext
         frontend = context.socket(zmq.ROUTER)
         frontend.bind("inproc://frontend")
 
@@ -346,13 +346,12 @@ class SceneRouterTask(threading.Thread):
         backend.bind("inproc://backend")
 
         workers = []
-        count = 3
         poller = zmq.Poller()
         # Only poll for requests from backend until workers are available
         poller.register(backend, zmq.POLLIN)
         while True:
             tprint("Polling for connections...")
-            sockets = dict(poller.poll(1000))
+            sockets = dict(poller.poll())
             if backend in sockets:
                 # Handle worker activity on the backend
                 request = backend.recv_multipart()
@@ -364,9 +363,6 @@ class SceneRouterTask(threading.Thread):
                     # If client reply, send rest back to frontend
                     empty, reply = request[3:]
                     frontend.send_multipart([client, b"", reply])
-                    count -= 1
-                    if not count:
-                        break
 
             if frontend in sockets:
                 # Get next client request, route to last-used worker
@@ -379,21 +375,25 @@ class SceneRouterTask(threading.Thread):
 
         frontend.close()
         backend.close()
-        context.term()
 
 def main():
+    ctx = zmq.Context()
     tprint("Initialize SbSceneWorkerTask...")
-    sbSceneWorker = SbSceneWorkerTask(1)
+    sbSceneWorker = SbSceneWorkerTask(ctx,1)
     sbSceneWorker.start()
 
     tprint("Initialize TestSceneClientTask...")
-    sbTestClient = TestSceneClientTask(20)
+    sbTestClient = TestSceneClientTask(ctx,20)
     sbTestClient.start()
 
     tprint("Initialize SceneRouterTask...")
-    sbSceneRouter = SceneRouterTask()
+    sbSceneRouter = SceneRouterTask(ctx)
     sbSceneRouter.start()
+
+    sbSceneWorker.join()
+    sbTestClient.join()
     sbSceneRouter.join()
+    ctx.term()
 
 if __name__ == "__main__":
     main()

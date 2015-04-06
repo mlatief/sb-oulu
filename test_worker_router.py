@@ -87,10 +87,6 @@ class SceneRouterTask(threading.Thread):
         #backend.bind("tcp://*:5557")
         backend.bind("inproc://backend")
 
-        tprint("Initialize SbSceneWorkerTask...")
-        sbSceneWorker = SbSceneWorkerTask(context, 1)
-        sbSceneWorker.start()
-
         workers = []
         count = 3
         poller = zmq.Poller()
@@ -133,12 +129,17 @@ class SceneRouterTask(threading.Thread):
 
 def main():
     ctx = zmq.Context()
-    sbRouter = SceneRouterTask(ctx)
-    sbRouter.start()
+
+    tprint("Initialize SbSceneWorkerTask...")
+    sbSceneWorker = SbSceneWorkerTask(ctx, 1)
+    sbSceneWorker.start()
 
     tprint("Initialize TestSceneClientTask...")
     sbTestClient = TestSceneClientTask(ctx, 20)
     sbTestClient.start()
+
+    sbRouter = SceneRouterTask(ctx)
+    sbRouter.start()
 
     sbRouter.join()
 
