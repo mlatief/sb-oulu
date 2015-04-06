@@ -33,6 +33,7 @@
 
 		<div id="Stats-output"></div>
 		<div id="container"></div>
+		<div id="controls"></div>
 
 		<div id="info">
 			<a href="http://threejs.org" target="_blank">three.js</a> Dear Brad!
@@ -47,6 +48,7 @@
 		<script src="js/dat.gui.js"></script>
 
 		<script src="js/socket.io.js"></script>
+		<script src="js/msgpack5_bundle.js"></script>
 
 		<script>
 
@@ -78,7 +80,7 @@
 				document.getElementById( 'container' ).appendChild( renderer.domElement );
 
 				// Controls ( LearningJS - Chapter 09 - Tutorial 08 )
-				var orbitControls = new THREE.OrbitControls(camera);
+				//var orbitControls = new THREE.OrbitControls(camera);
         //orbitControls.autoRotate = true;
 
 				// Lights
@@ -151,7 +153,7 @@
 
 					//THREE.AnimationHandler.update( clock.getDelta() );
 					var delta = clock.getDelta();
-					orbitControls.update(delta);
+					//orbitControls.update(delta);
 
 					renderer.render( scene, camera );
 				}
@@ -177,19 +179,25 @@
 
 			function initControls(){
 				bradControls = new function () {
-            this.animationSpeed = 0.02;
-						this.standIdle = function(){
-							socket.emit('play bml', {data: 'idle'});
+						this.bodyPosture = "ChrBrad@Idle01" //ChrBrad@Guitar01
+						this.playBML = function(){
+							socket.emit('play bml', {data: '<body posture="' + this.bodyPosture + '"/>'});
 						}
-						this.playGuitar = function(){
-							socket.emit('play bml', {data: 'play_guitar'});
+						this.deltaTime = 0.016
+						this.updateBrad = function(){
+							socket.emit('update', {data: this.deltaTime});
 						}
         };
 
         var gui = new dat.GUI();
-				gui.add(bradControls, 'animationSpeed', 0, 0.5);
-				gui.add(bradControls, 'standIdle');
-				gui.add(bradControls, 'playGuitar');
+
+				var bmlFolder = gui.addFolder('BML');
+				bmlFolder.add(bradControls, 'bodyPosture', {'Idle': 'ChrBrad@Idle01', 'Guitar':'ChrBrad@Guitar01'});
+				bmlFolder.add(bradControls, 'playBML');
+
+				var updateFolder = gui.addFolder('Update Brad');
+				updateFolder.add(bradControls, 'deltaTime').min(0.016).max(1).step(0.016);
+				updateFolder.add(bradControls, 'updateBrad');
 			}
 
 			function initSockets(){
@@ -203,6 +211,8 @@
 				// the data is displayed in the "Received" section of the page
 				sock.on('boneUpdate', function(msg) {
 						console.log('Received #' + msg.count + ': ' + msg.data);
+						var boneJs = msgpack5.decode(msg.data);
+						console.log('BoneJS: ' + boneJS)
 				});
 				return sock;
 			}

@@ -11,15 +11,18 @@ app.debug = True
 app.config['SECRET_KEY'] = 'no_secrets!'
 socketio = SocketIO(app)
 
+CHARBRAD = 'ChrBrad'
+
 @socketio.on('update', namespace='/test')
 def test_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
 
     #should call brad playguitar or idle based on message[data]
     dtime = message['data']
+    print "update received - " + dtime
 
-    update_scene(float(dtime))
-    char = get_character('ChrBrad')
+    update_scene_dt(float(dtime))
+    char = get_character_bonedata(CHARBRAD)
     emit('bone update',
          {'data': char, 'count': session['receive_count']})
 
@@ -27,12 +30,12 @@ def test_message(message):
 def test_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
 
-    #should call brad playguitar or idle based on message[data]
-    action = message['data']
-    if action == 'idle':
-        bml_idle()
-    else if action == 'guitar'
-        bml_guitar()
+    #for example call brad playguitar or idle based on message[data]
+    bml_tags = message['data']
+    print "play bml received - " + bml_tags
+    #play_bml(CHARBRAD, bml_tags)
+    bml_idle()
+    start_simulation()
 
 @app.route('/')
 def index():
