@@ -44,3 +44,5 @@ DZone article about ZMQ http://java.dzone.com/articles/distributed-systems-zerom
 Getting rid of ZMQ context http://250bpm.com/blog:23
 
 SOA and ZMQ architecture use case http://www.aosabook.org/en/zeromq.html#fig.zeromq.multiuse
+
+CONSIDER to use Greenlets!!

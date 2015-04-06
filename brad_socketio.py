@@ -1,14 +1,17 @@
-from gevent import monkey
-monkey.patch_all()
+#from gevent import monkey
+#monkey.patch_all()
 
 from brad_scene import *
 
 from flask import Flask, session, request, url_for
 from flask.ext.socketio import SocketIO, emit, disconnect
 
+import zmq, threading
+
 app = Flask(__name__, static_folder = 'app', static_url_path = '')
 app.debug = True
 app.config['SECRET_KEY'] = 'no_secrets!'
+app.zmqcontext = zmq.Context()
 socketio = SocketIO(app)
 
 CHARBRAD = 'ChrBrad'
@@ -19,10 +22,17 @@ def test_message(message):
 
     #should call brad playguitar or idle based on message[data]
     dtime = message['data']
-    print "update received - " + dtime
+    print "update received - " + str(dtime)
 
-    update_scene_dt(float(dtime))
-    char = get_character_bonedata(CHARBRAD)
+    context = app.zmqcontext
+    socket = context.socket(zmq.REQ)
+    #socket.identity = u"TestClient-{}".format(self.id).encode("ascii")
+    socket.connect("inproc://frontend")
+    socket.send(b"HELLO")
+    reply = socket.recv()
+
+    #update_scene_dt(float(dtime))
+    char = reply#get_character_bonedata(CHARBRAD)
     emit('bone update',
          {'data': char, 'count': session['receive_count']})
 
@@ -41,7 +51,27 @@ def test_message(message):
 def index():
     return app.send_static_file('brad_scene.html')
 
-if __name__ == "__main__":
-    init_assets()
-    init_scene()
+
+def main():
+    ctx = app.zmqcontext
+    tprint("Initialize SceneRouterTask...")
+    sbSceneRouter = SceneRouterTask(ctx)
+    sbSceneRouter.start()
+
+    tprint("Initialize SbSceneWorkerTask...")
+    sbSceneWorker = SbSceneWorkerTask(ctx,1)
+    sbSceneWorker.start()
+
+    # tprint("Initialize TestSceneClientTask...")
+    # sbTestClient = TestSceneClientTask(ctx,20)
+    # sbTestClient.start()
+
     socketio.run(app, port=5050, use_reloader=False)
+
+
+    #sbSceneRouter.join()
+    #sbSceneWorker.join()
+    #ctx.term()
+
+if __name__ == "__main__":
+    main()
