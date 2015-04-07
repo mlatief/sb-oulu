@@ -1,52 +1,70 @@
+# Integrating SmartBody with threeJS
+This project suggests one way of rendering a [SmartBody](http://smartbody.ict.usc.edu/) scene using ThreeJS. Currently, a normal threeJS scene is initialized and connected to a Python backend using WebSocket. The Python backend in turn is managing a SmartBody scene and handling WebSocket requests.
 
-http://stackoverflow.com/questions/7919516/using-textures-in-three-js
-var texture = materials[i].map;
-if(texture instanceof THREE.Texture){
-  var image = texture.sourceFile;
-}
+# Dependencies
+The following libraries are needed before running the project:
 
+  * Python (2.7.9)
+  * [SmartBody (Win32 r5919)](http://sourceforge.net/projects/smartbody/files/SmartBody-r5919-windows.exe/download)
+  * Flask-SocketIO (0.6.0)
+  * pyzmq (14.5.0)
+  * msgpack-python (0.4.6)
 
+# Running
 
-for(i=0; i<4; i++){
-  var light = new THREE.SpotLight( 0xffffff, 0.75 );
-  light.castShadow = true;
-  scene.add( light );
-  lights.push( light );
-}
-lights[0].position.set(5,5,5);
-lights[1].position.set(-5,5,5);
-lights[2].position.set(-5,5,-5);
-lights[3].position.set(5,5,-5);
+First make sure `SMARTBODYDIR` variable is set to where SmartBody is installed. It is used by brad_scene.py to locate default SmartBody data (skeletons, motions, scripts .. etc)
 
-//Point the lights toward dear Brad!
-_.each(lights, function(t){
-  this.target = brad;
-  });
+```
+> SET SMARTBODYDIR=C:\SmartBody-r5919
+```
 
+Then also following SmartBody installation with Python guidelines  make sure the following run without getting errors:
 
-Q. How much fast is SmartBody simulation? and when do these calculations occur actually?
+```
+> python -c "import SmartBody;s=SmartBody.getScene()"
+```
 
+Then simply run the following:
 
-Python floating point hell!
-http://stackoverflow.com/a/455634/1461232
+```
+> python brad_socketio.py
+Initialize SceneRouterTask...
+Polling for connections...
+Initialize SbSceneWorkerTask...
+media path = C:\SmartBody-r5919/data
+Loaded motions: 39
+Loaded skeletons: 2
+SB: BML idle ...
+SB: num of pawns in the scene = 1
+SB: num of characters in the scene = 1
+Initialized!
+Worker-1: Send READY
+Polling for connections...
+ * Running on http://127.0.0.1:5050/
+```
 
+Then browse to `http://localhost:5050/` and get brad in a scene with a sphere like the following:
 
-looks like there is a bug in json.dumps which might be called from Python print to dictionaries
-use https://github.com/esnme/ultrajson instead!
+![ScreenShot of Brad in a threeJS scene](screenshot.png)
 
+To stop the server, use `Ctrl+BREAK` on Windows (`Ctrl+C` isn't working yet!)
 
-consider using gevent http://blog.pythonisito.com/2011/07/gevent-zeromq-websockets-and-flot-ftw.html
+# Appendix: How we installed SmartBody r5919 on Windows 7
 
-consider this article about thread safety http://stackoverflow.com/questions/5841896/0mq-how-to-use-zeromq-in-a-threadsafe-manner
+  * Download [SmartBody (Win32 r5919)](http://sourceforge.net/projects/smartbody/files/SmartBody-r5919-windows.exe/download)
+  * Installed to `C:\SmartBody-r5919`
+  * Copy all the .dll files from `C:\SmartBody-r5919\bin` to `<python_lib_dir>` (e.g. `C:\Python27\Lib\site-packages`)
+  * Rename `SmartBody.dll` to `SmartBody.pyd`
+  * Add `smartbody.pth` file that contains one-line `SmartBody`
+  * After that, the following command should work without errors.:
 
-DZone article about ZMQ http://java.dzone.com/articles/distributed-systems-zeromq
+```
+python -c "import SmartBody;s=SmartBody.getScene();"
+```
 
-Getting rid of ZMQ context http://250bpm.com/blog:23
+Good Luck!
 
-SOA and ZMQ architecture use case http://www.aosabook.org/en/zeromq.html#fig.zeromq.multiuse
+# Contributors
+Mohamed Abdrab, Henri Rönkkö, Junjie Zhou, Henri Tuomivaara
 
-CONSIDER to use Greenlets!!
-
-CONSIDER again throwing this whole Python thing and use NodeJS
-  http://socket.io/blog/introducing-socket-io-1-0/#binary
-  https://nodejs.org/api/addons.html
+Good luck!
