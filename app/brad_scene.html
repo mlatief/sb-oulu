@@ -150,10 +150,11 @@
 				function renderLoop() {
 					requestAnimationFrame( renderLoop, renderer.domElement );
 					stats.update();
-					socket.emit('update', {data: delta.toFixed(2)});
+
+					var delta = clock.getDelta();
+					socket.emit('update', {'data': delta.toFixed(3)});
 
 					//THREE.AnimationHandler.update( clock.getDelta() );
-					var delta = clock.getDelta();
 					//orbitControls.update(delta);
 					renderer.render( scene, camera );
 				}
@@ -181,11 +182,11 @@
 				bradControls = new function () {
 						this.bodyPosture = "ChrBrad@Idle01" //ChrBrad@Guitar01
 						this.playBML = function(){
-							socket.emit('play bml', {data: '<body posture="' + this.bodyPosture + '"/>'});
+							socket.emit('play bml', {'data': '<body posture="' + this.bodyPosture + '"/>'});
 						}
 						this.deltaTime = 0.016
 						this.updateBrad = function(){
-							socket.emit('update', {data: this.deltaTime});
+							socket.emit('update', {'data': this.deltaTime.toFixed(3)});
 						}
         };
 

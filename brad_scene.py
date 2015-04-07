@@ -8,6 +8,7 @@ from SmartBody import *
 
 import msgpack
 import ujson
+
 import zmq
 
 def tprint(msg):
@@ -237,7 +238,7 @@ class SbSceneWorkerTask(threading.Thread):
         tprint( 'SB: BML guitar ...')
         self.bml.execBML('ChrBrad', '<body posture="ChrBrad@Guitar01"/>')
 
-    def update_scene_dt(self,dt):
+    def update_scene_dt(self, dt):
         tprint( 'SB: Update scene ...')
         self.scene.update()
         self.sim.setTime(self.sim.getTime()+dt)
@@ -333,10 +334,11 @@ class TestSceneClientTask(threading.Thread):
         reply = socket.recv()
         tprint("{}: {}".format(socket.identity.decode("ascii"), reply.decode("ascii")))
 
-        tprint("{}: {}".format(socket.identity.decode("ascii"), "Send Update"))
-        socket.send(b"update")
-        reply = socket.recv()
-        tprint("{}: {}".format(socket.identity.decode("ascii"), reply.decode("ascii")))
+        for i in range(100):
+            tprint("{}: {}".format(socket.identity.decode("ascii"), "Send Update"))
+            socket.send_multipart([b"update", str(0.016)])
+            reply = socket.recv()
+            tprint("{}: {}".format(socket.identity.decode("ascii"), reply))
 
 class SceneRouterTask(threading.Thread):
     """SbSceneRouterTask"""
