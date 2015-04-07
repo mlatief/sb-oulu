@@ -46,3 +46,7 @@ Getting rid of ZMQ context http://250bpm.com/blog:23
 SOA and ZMQ architecture use case http://www.aosabook.org/en/zeromq.html#fig.zeromq.multiuse
 
 CONSIDER to use Greenlets!!
+
+CONSIDER again throwing this whole Python thing and use NodeJS
+  http://socket.io/blog/introducing-socket-io-1-0/#binary
+  https://nodejs.org/api/addons.html

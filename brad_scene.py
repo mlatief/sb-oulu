@@ -31,8 +31,8 @@ class MyListener(CharacterListener):
 
 def SrVecToXYZ(s):
     #return [round(s.getData(0),2), round(s.getData(1),2), round(s.getData(2),2)]
-    return s.__str__()
-    #return ("{0:.2f},{1:.2f}, {2:.2f}").format(s.getData(0), s.getData(1), s.getData(2))
+    #return s.__str__()
+    return ("{0:.2f},{1:.2f}, {2:.2f}").format(s.getData(0), s.getData(1), s.getData(2))
 
 def SrQuatToWXYZ(s):
     #return s.__str__()
@@ -109,9 +109,11 @@ class SbSceneWorkerTask(threading.Thread):
         #brad.setStringAttribute('deformableMesh', 'ChrBrad.dae')
         # show the character
         #brad.setStringAttribute('displayType', 'GPUmesh')
+        self.bml_idle()
+        self.start_simulation()
 
-        tprint( 'num of pawns in the scene = ' + str(self.scene.getNumPawns()))
-        tprint('num of characters in the scene = ' + str(self.scene.getNumCharacters()))
+        tprint('SB: num of pawns in the scene = ' + str(self.scene.getNumPawns()))
+        tprint('SB: num of characters in the scene = ' + str(self.scene.getNumCharacters()))
 
 
     def Zebra2map(self):
@@ -228,19 +230,20 @@ class SbSceneWorkerTask(threading.Thread):
         self.bml.execBML(character, bml_tags)
 
     def bml_idle(self):
-        tprint('BML idle ...')
+        tprint('SB: BML idle ...')
         self.bml.execBML('ChrBrad', '<body posture="ChrBrad@Idle01"/>')
 
     def bml_guitar(self):
-        tprint( 'BML guitar ...')
+        tprint( 'SB: BML guitar ...')
         self.bml.execBML('ChrBrad', '<body posture="ChrBrad@Guitar01"/>')
 
     def update_scene_dt(self,dt):
+        tprint( 'SB: Update scene ...')
         self.scene.update()
         self.sim.setTime(self.sim.getTime()+dt)
 
 
-    def get_character_bonedata(cname):
+    def get_character_bonedata(self, cname):
         sbchar = self.scene.getCharacter(cname)
         sbskel = sbchar.getSkeleton()
         mychar = {'name': cname}
@@ -253,7 +256,7 @@ class SbSceneWorkerTask(threading.Thread):
         mychar['pos'] = SrVecToXYZ(globalPosVec)
         mychar['rot'] = SrQuatToWXYZ(globalQuat)
 
-        curLen = len(mychar_buffer['skeleton'])
+        #curLen = len(mychar['skeleton'])
         numJoints = sbskel.getNumJoints()
 
         # joint_name = "JtRoot"
@@ -272,8 +275,8 @@ class SbSceneWorkerTask(threading.Thread):
             j = { "name": jname, "pos": SrVecToXYZ(jpos), "rot": SrQuatToWXYZ(jquat)}
             mychar["skeleton"].append(j)
 
-        m = msgpack.packb(mychar)
-        #m=ujson.dumps(mychar)
+        #m = msgpack.packb(mychar)
+        m = ujson.dumps(mychar)
         return m
 
 
@@ -287,17 +290,21 @@ class SbSceneWorkerTask(threading.Thread):
         tprint("{}: {}".format(socket.identity.decode("ascii"), "Send READY"))
         socket.send(b"READY")
         while True:
-            address, empty, request = socket.recv_multipart()
+            request = socket.recv_multipart()
+            address, empty, cmd = request[:3]
             tprint("{}: {}".format(socket.identity.decode("ascii"),
-                                  request.decode("ascii")))
+                                  cmd.decode("ascii")))
             response = b"OK"
-            if request=='idle':
+            if cmd == 'update' and len(request)>3:
+                self.update_scene_dt(float(request[3]))
+                response = self.get_character_bonedata("ChrBrad")
+            elif cmd == 'bml' and len(request)>3:
+                self.play_bml(request[3])
+            elif cmd=='idle':
                 self.bml_idle()
-            elif request == 'guitar':
+            elif cmd == 'guitar':
                 self.bml_guitar()
-            elif request == 'update':
-                self.update_scene_dt(0.1)
-            elif request == 'HELLO':
+            elif cmd == 'HELLO':
                 response = b"HELLO"
 
             socket.send_multipart([address, b"", response])
@@ -366,9 +373,13 @@ class SceneRouterTask(threading.Thread):
 
             if frontend in sockets:
                 # Get next client request, route to last-used worker
-                client, empty, request = frontend.recv_multipart()
+                request = frontend.recv_multipart()
+                client, empty, cmd = request[:3]
                 worker = workers.pop(0)
-                backend.send_multipart([worker, b"", client, b"", request])
+                if len(request) > 3:
+                    backend.send_multipart([worker, b"", client, b"", cmd, request[3] ])
+                else:
+                    backend.send_multipart([worker, b"", client, b"", cmd])
                 if not workers:
                     # Don't poll clients if no workers are available
                     poller.unregister(frontend)

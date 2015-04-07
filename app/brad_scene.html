@@ -80,7 +80,7 @@
 				document.getElementById( 'container' ).appendChild( renderer.domElement );
 
 				// Controls ( LearningJS - Chapter 09 - Tutorial 08 )
-				//var orbitControls = new THREE.OrbitControls(camera);
+				var orbitControls = new THREE.OrbitControls(camera, document.getElementById( 'container' ));
         //orbitControls.autoRotate = true;
 
 				// Lights
@@ -97,7 +97,7 @@
 				scene.add( new THREE.GridHelper(10,1));
 
 				// Override materials in easier way! faster rendering already!
-				scene.overrideMaterial = new THREE.MeshLambertMaterial({color: 0xffe0bd});
+				scene.overrideMaterial = new THREE.MeshLambertMaterial({color: 0x0490a9});
 
 				// Load and Add dear Brad!
 				var loader = new THREE.JSONLoader();
@@ -150,11 +150,11 @@
 				function renderLoop() {
 					requestAnimationFrame( renderLoop, renderer.domElement );
 					stats.update();
+					socket.emit('update', {data: delta.toFixed(2)});
 
 					//THREE.AnimationHandler.update( clock.getDelta() );
 					var delta = clock.getDelta();
 					//orbitControls.update(delta);
-
 					renderer.render( scene, camera );
 				}
 
@@ -194,10 +194,12 @@
 				var bmlFolder = gui.addFolder('BML');
 				bmlFolder.add(bradControls, 'bodyPosture', {'Idle': 'ChrBrad@Idle01', 'Guitar':'ChrBrad@Guitar01'});
 				bmlFolder.add(bradControls, 'playBML');
+				bmlFolder.open()
 
 				var updateFolder = gui.addFolder('Update Brad');
 				updateFolder.add(bradControls, 'deltaTime').min(0.016).max(1).step(0.016);
 				updateFolder.add(bradControls, 'updateBrad');
+				updateFolder.open()
 			}
 
 			function initSockets(){
@@ -209,10 +211,9 @@
 
 				// event handler for server sent data
 				// the data is displayed in the "Received" section of the page
-				sock.on('boneUpdate', function(msg) {
+				sock.on('bone update', function(msg) {
 						console.log('Received #' + msg.count + ': ' + msg.data);
-						var boneJs = msgpack5.decode(msg.data);
-						console.log('BoneJS: ' + boneJS)
+
 				});
 				return sock;
 			}

@@ -17,35 +17,38 @@ socketio = SocketIO(app)
 CHARBRAD = 'ChrBrad'
 
 @socketio.on('update', namespace='/test')
-def test_message(message):
+def update_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
 
     #should call brad playguitar or idle based on message[data]
     dtime = message['data']
-    print "update received - " + str(dtime)
+    sttime = str(dtime)
+    print "update received - " + sttime
 
-    context = app.zmqcontext
-    socket = context.socket(zmq.REQ)
-    #socket.identity = u"TestClient-{}".format(self.id).encode("ascii")
+    socket = app.zmqcontext.socket(zmq.REQ)
     socket.connect("inproc://frontend")
-    socket.send(b"HELLO")
-    reply = socket.recv()
+    socket.send_multipart([b"update", sttime])
+    resp = socket.recv()
+    socket.close()
 
     #update_scene_dt(float(dtime))
-    char = reply#get_character_bonedata(CHARBRAD)
+    #char = reply#get_character_bonedata(CHARBRAD)
     emit('bone update',
-         {'data': char, 'count': session['receive_count']})
+         {'data': resp, 'count': session['receive_count']})
 
 @socketio.on('play bml', namespace='/test')
-def test_message(message):
+def play_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
 
     #for example call brad playguitar or idle based on message[data]
     bml_tags = message['data']
     print "play bml received - " + bml_tags
-    #play_bml(CHARBRAD, bml_tags)
-    bml_idle()
-    start_simulation()
+
+    socket = app.zmqcontext.socket(zmq.REQ)
+    socket.connect("inproc://frontend")
+    socket.send(b"idle")
+    reply = socket.recv()
+    socket.close()
 
 @app.route('/')
 def index():
