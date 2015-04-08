@@ -3,6 +3,9 @@
 
 from brad_scene import *
 
+#WebSocket hixie-76 protocol
+#New WebSocket RFC 6455 protocol
+
 from flask import Flask, session, request, url_for
 from flask.ext.socketio import SocketIO, emit, disconnect
 

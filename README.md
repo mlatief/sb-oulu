@@ -65,6 +65,6 @@ python -c "import SmartBody;s=SmartBody.getScene();"
 Good Luck!
 
 # Contributors
-Mohamed Abdrab, Henri Rönkkö, Junjie Zhou, Henri Tuomivaara
+Mohamed Abdrabo, Henri Rönkkö, Junjie Zhou, Henri Tuomivaara
 
 Good luck!

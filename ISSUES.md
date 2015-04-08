@@ -50,3 +50,15 @@ CONSIDER to use Greenlets!!
 CONSIDER again throwing this whole Python thing and use NodeJS
   http://socket.io/blog/introducing-socket-io-1-0/#binary
   https://nodejs.org/api/addons.html
+
+Pickles security issue
+http://www.benfrederickson.com/dont-pickle-your-data/
+https://docs.python.org/2/library/pickle.html
+http://www.cs.jhu.edu/~s/musings/pickle.html
+
+
+WS RFC 6455
+http://tools.ietf.org/html/rfc6455#page-5
+http://www.infoq.com/news/2014/06/socketio-1
+http://en.wikipedia.org/wiki/WebSocket#Browser_support
+http://socket.io/blog/introducing-socket-io-1-0/
