@@ -101,31 +101,17 @@
 
 				// Load and Add dear Brad!
 				var loader = new THREE.JSONLoader();
-				//var loadFile = "./models/threejs/monkey_geo.json";
-				//var loadFile = "./models/threejs/brad3.json";
 				var loadFile = "./models/json/brad.json";
 				loader.load( loadFile, function (geometry, materials) {
-
-					for(var i=0; i<materials.length; i++){
-						//materials[i].map = null;
-						//materials[i].shading = THREE.NoShading;
-						//materials[i].color = new THREE.Color(0xFFCC66);
-						//materials[i] = new THREE.MeshLambertMaterial({name:materials[i].name, color: materials[i].color});
+					var brads = {} ;
+					for(var i=0; i<3;i++)
+					{
+						var brad = new THREE.SkinnedMesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+	          // Add the mesh
+						scene.add(brad);
+						brads["ChrBrad" + i] = brad;
+						brad.position.set(i*2, 0, 0);
 					}
-
-					var brad = new THREE.SkinnedMesh( geometry, new THREE.MeshFaceMaterial( materials ) );
-
-					// Point the light(s) toward dear Brad!
-					directionalLight.target = brad;
-
-					// And the camera!
-					camera.lookAt(brad.position);
-
-          // Add the mesh
-          scene.add(brad);
-
-					// Check if he has skeleton or just flesh!
-					console.log(brad.skeleton);
 
 				} );
 
