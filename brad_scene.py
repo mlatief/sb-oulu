@@ -1,20 +1,22 @@
-import os, sys
-import time
+import os
+import sys
 
 import threading
 
 import SmartBody
-from SmartBody import *
+from SmartBody import SrVec, CharacterListener
 
-import msgpack
+# import msgpack
 import ujson
 
 import zmq
+
 
 def tprint(msg):
     """like print, but won't get newlines confused with multiple threads"""
     sys.stdout.write(msg + '\n')
     sys.stdout.flush()
+
 
 class MyListener(CharacterListener):
     def OnCharacterCreate(self, name, type):
@@ -31,8 +33,9 @@ class MyListener(CharacterListener):
 
 
 def SrVecToXYZ(s):
-    #return [round(s.getData(0),2), round(s.getData(1),2), round(s.getData(2),2)]
-    #return s.__str__()
+    # return [round(s.getData(0),2),
+    #         round(s.getData(1),2), round(s.getData(2),2)]
+    # return s.__str__()
     return ("{0:.2f},{1:.2f}, {2:.2f}").format(s.getData(0), s.getData(1), s.getData(2))
 
 def SrQuatToWXYZ(s):
@@ -69,30 +72,29 @@ class SbSceneWorkerTask(threading.Thread):
 
         motionNames = self.assetManager.getMotionNames()
         skelNames = self.assetManager.getSkeletonNames()
-        #for i in range(0,len(motionNames)):
+        # for i in range(0,len(motionNames)):
         #    print 'motion ' + str(i) + ' = ' + motionNames[i]
-        #for i in range(0,len(skelNames)):
+        # for i in range(0,len(skelNames)):
         #    print 'skeleton ' + str(i) + ' = ' + skelNames[i]
         tprint("Loaded motions: " + str(len(motionNames)))
         tprint("Loaded skeletons: " + str(len(skelNames)))
 
-
     def init_scene(self):
         obj = self.scene.createPawn('obj1')
-        obj.setStringAttribute('collisionShape','box')
-        obj.setVec3Attribute('collisionShapeScale',5.0,10.0,3.0)
+        obj.setStringAttribute('collisionShape', 'box')
+        obj.setVec3Attribute('collisionShapeScale', 5.0, 10.0, 3.0)
 
-        obj.setPosition(SrVec(0,30,0))
-        obj.setHPR(SrVec(0,0,90))
+        obj.setPosition(SrVec(0, 30, 0))
+        obj.setHPR(SrVec(0, 0, 90))
 
         # set the scene scale and reset the camera
         self.scene.setScale(1.0)
-        #scene.getActiveCamera().reset()
+        # scene.getActiveCamera().reset()
 
-        #self.mylistener = MyListener()
-        #self.scene.addSceneListener(self.mylistener)
+        # self.mylistener = MyListener()
+        # self.scene.addSceneListener(self.mylistener)
 
-        #self.scene.run('zebra2-map.py')
+        # self.scene.run('zebra2-map.py')
         self.Zebra2map()
         zebra2Map = self.scene.getJointMapManager().getJointMap('zebra2')
         bradSkeleton = self.scene.getSkeleton('ChrBrad.sk')
