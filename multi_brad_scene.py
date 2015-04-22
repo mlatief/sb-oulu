@@ -2,7 +2,7 @@ import os
 import sys
 # import time
 import math
-import random
+# import random
 
 import threading
 
@@ -12,13 +12,16 @@ import ujson
 import zmq
 
 import SmartBody
-from SmartBody import SrVec, CharacterListener, SBEventHandler
+from SmartBody import SrVec, CharacterListener
 
 from sbscripts import zebra2map as z2m
 from sbscripts import BehaviorSetMaleLocomotion, BehaviorSetGestures
 
-# from crowddemo import CrowdDemo, LocomotionHandler
+from crowddemo import CrowdDemo, LocomotionHandler
 
+NUMBRADS = 20
+# crowddemo = None
+# locomotionHdl = None
 
 def tprint(msg):
     """like print, but won't get newlines confused with multiple threads"""
@@ -41,20 +44,6 @@ class MyListener(CharacterListener):
         tprint("Simulation update...")
 
 
-def vec2str(vec):
-    ''' Converts SrVec to string '''
-    x = vec.getData(0)
-    y = vec.getData(1)
-    z = vec.getData(2)
-    if -0.0001 < x < 0.0001:
-        x = 0
-    if -0.0001 < y < 0.0001:
-        y = 0
-    if -0.0001 < z < 0.0001:
-        z = 0
-    return "" + str(x) + " " + str(y) + ""
-
-
 def SrVecToXYZ(s):
     # return [round(s.getData(0),2), round(s.getData(1),2),
     # round(s.getData(2),2)]
@@ -68,25 +57,23 @@ def SrQuatToWXYZ(s):
     # getData(2),2), round(s.getData(3), 2)]
     return ("{0:.2f},{1:.2f},{2:.2f},{3:.2f}").format(s.getData(0), s.getData(1), s.getData(2), s.getData(3))
 
-bradReached = False
-
 
 # Locomotion handler to check if characters have arrived
-class LocomotionHandler(SBEventHandler):
-    def __init__(self):
-        self.reachCount = 0
-        SBEventHandler.__init__(self)
+# class LocomotionHandler(SBEventHandler):
+#     def __init__(self):
+#         self.reachCount = 0
+#         SBEventHandler.__init__(self)
 
-    def executeAction(self, ev):
-        global bradReached
-        params = ev.getParameters()
-        print("executeAction ...")
-        if 'success' in params:
-            if 'ChrBrad' in params:
-                self.reachCount = self.reachCount + 1
-                if self.reachCount >= 6:
-                    bradReached = True
-                    self.reachCount = 0
+#     def executeAction(self, ev):
+#         global bradReached
+#         params = ev.getParameters()
+#         print("executeAction ...")
+#         if 'success' in params:
+#             if 'ChrBrad' in params:
+#                 self.reachCount = self.reachCount + 1
+#                 if self.reachCount >= 6:
+#                     bradReached = True
+#                     self.reachCount = 0
 
 
 class SbSceneWorkerTask(threading.Thread):
@@ -102,9 +89,11 @@ class SbSceneWorkerTask(threading.Thread):
         self.steerManager = self.scene.getSteerManager()
 
         self.init_assets()
+
+        print("Creating %d Brads..."%NUMBRADS)
         self.create_brads()
 
-        self.bradCur = 0
+        # self.bradCur = 0
         self.start_simulation()
         # self.animate_brads()
 
@@ -132,20 +121,23 @@ class SbSceneWorkerTask(threading.Thread):
 
     def create_brads(self):
         z2m.Zebra2map(self.scene)
-        zebra2Map = self.scene.getJointMapManager().getJointMap('zebra2')
-        bradSkeleton = self.scene.getSkeleton('ChrBrad.sk')
-        zebra2Map.applySkeleton(bradSkeleton)
-        zebra2Map.applyMotionRecurse('ChrBrad')
 
-        amount = 20
+        amount = NUMBRADS
         row = 0
         column = 0
         offsetX = 0
         offsetZ = 0
         for i in range(amount):
             baseName = 'ChrBrad%s' % i
+            print("Creating %s..."%baseName)
             brad = self.scene.createCharacter(baseName, '')
             bradSkeleton = self.scene.createSkeleton('ChrBrad.sk')
+
+            zebra2Map = self.scene.getJointMapManager().getJointMap('zebra2')
+            bradSkeleton = self.scene.getSkeleton('ChrBrad.sk')
+            zebra2Map.applySkeleton(bradSkeleton)
+            zebra2Map.applyMotionRecurse('ChrBrad')
+
             brad.setSkeleton(bradSkeleton)
             # Set position logic
             posX = (-100 * (5/2)) + 100 * column
@@ -161,22 +153,19 @@ class SbSceneWorkerTask(threading.Thread):
 
             # setup mocap locomotion
             if i == 0:
-                # self.scene.run('BehaviorSetMaleLocomotion.py')
                 BehaviorSetMaleLocomotion.setupBehaviorSet(self.scene)
                 BehaviorSetMaleLocomotion.retargetBehaviorSet(self.scene,
                                                               baseName)
-
-                # self.scene.run('BehaviorSetGestures.py')
                 BehaviorSetGestures.setupBehaviorSet(self.scene)
-                # setupBehaviorSet()
                 BehaviorSetGestures.retargetBehaviorSet(self.scene, baseName)
 
-            steerAgent = self.steerManager.createSteerAgent(baseName)
-            steerAgent.setSteerStateNamePrefix("all")
-            steerAgent.setSteerType("example")
-            # Set up steering
-            # setupSteerAgent(baseName, 'ChrBrad.sk')
-            brad.setBoolAttribute('steering.pathFollowingMode', False)
+            # steerAgent = self.steerManager.createSteerAgent(baseName)
+            # steerAgent.setSteerStateNamePrefix("all")
+            # steerAgent.setSteerType("basic")
+            # # Set up steering
+            # # setupSteerAgent(baseName, 'ChrBrad.sk')
+            # brad.setBoolAttribute('steering.pathFollowingMode', False)
+
             # Play default animation
             self.bml.execBML(baseName, '<body posture="ChrBrad@Idle01"/>')
 
@@ -186,33 +175,43 @@ class SbSceneWorkerTask(threading.Thread):
         self.steerManager.setEnable(False)
         self.steerManager.setEnable(True)
 
-        locomotionHdl = LocomotionHandler()
+        self.add_animate_script()
+
+    def add_animate_script(self):
+        #global crowddemo, locomotionHdl
+        # Run the update script
+        self.scene.removeScript('crowddemo')
+        self.crowddemo = CrowdDemo(self.scene)
+        print("Adding CrowdDemo script!")
+        self.scene.addScript('crowddemo', self.crowddemo)
+
+        self.locomotionHdl = LocomotionHandler(self.crowddemo)
         evtMgr = self.scene.getEventManager()
-        evtMgr.addEventHandler('locomotion', locomotionHdl)
+        evtMgr.addEventHandler('locomotion', self.locomotionHdl)
 
-    def animate_brads(self):
-        bradPath = [SrVec(-8, -8, 0), SrVec(8, 8, 0), SrVec(8, -8, 0),
-                    SrVec(-8, 8, 0)]
+    # def animate_brads(self):
+    #     bradPath = [SrVec(-8, -8, 0), SrVec(8, 8, 0), SrVec(8, -8, 0),
+    #                 SrVec(-8, 8, 0)]
 
-        bradList = []
-        for name in self.scene.getCharacterNames():
-            if 'ChrBrad' in name:
-                bradList.append(self.scene.getCharacter(name))
+    #     bradList = []
+    #     for name in self.scene.getCharacterNames():
+    #         if 'ChrBrad' in name:
+    #             bradList.append(self.scene.getCharacter(name))
 
-        newLocation = vec2str(bradPath[self.bradCur])
+    #     newLocation = vec2str(bradPath[self.bradCur])
 
-        for brad in bradList:
-            print("Moving Brad " + brad.getName() + " to " + newLocation)
-            # Move character
-            self.bml.execBML(brad.getName(),
-                             '<locomotion speed="' +
-                             str(random.uniform(1.20, 5.0)) +
-                             '" target="' +
-                             newLocation + '"/>')
+    #     for brad in bradList:
+    #         print("Moving Brad " + brad.getName() + " to " + newLocation)
+    #         # Move character
+    #         self.bml.execBML(brad.getName(),
+    #                          '<locomotion speed="' +
+    #                          str(random.uniform(1.20, 5.0)) +
+    #                          '" target="' +
+    #                          newLocation + '"/>')
 
-        self.bradCur = self.bradCur + 1
-        if self.bradCur >= len(bradPath):
-            self.bradCur = 0
+    #     self.bradCur = self.bradCur + 1
+    #     if self.bradCur >= len(bradPath):
+    #         self.bradCur = 0
 
         # Run the update script
         # self.scene.removeScript('crowddemo')
@@ -224,9 +223,9 @@ class SbSceneWorkerTask(threading.Thread):
         self.sim.start()
 
     def update_scene_dt(self, dt):
-        tprint('SB: Update ...')
-        self.scene.update()
+        tprint('SB: Update ... %f'%self.sim.getTime())
         self.sim.setTime(self.sim.getTime()+dt)
+        self.scene.update()
 
     def set_zcontext(self, context):
         self.zcontext = context
@@ -247,16 +246,16 @@ class SbSceneWorkerTask(threading.Thread):
         numJoints = sbskel.getNumJoints()
 
         mychar['skeleton'] = []
-        numJoints = sbskel.getNumJoints()
-        for j in range(numJoints):
-            sbjoint = sbskel.getJoint(j)
-            jname = sbjoint.getName()
-            jpos = sbjoint.getPosition()
-            jquat = sbjoint.getQuat()
-            j = {"name": jname,
-                 "pos": SrVecToXYZ(jpos),
-                 "rot": SrQuatToWXYZ(jquat)}
-            # mychar["skeleton"].append(j)
+        # numJoints = sbskel.getNumJoints()
+        # for j in range(numJoints):
+        #     sbjoint = sbskel.getJoint(j)
+        #     jname = sbjoint.getName()
+        #     jpos = sbjoint.getPosition()
+        #     jquat = sbjoint.getQuat()
+        #     j = {"name": jname,
+        #          "pos": SrVecToXYZ(jpos),
+        #          "rot": SrQuatToWXYZ(jquat)}
+        #     # mychar["skeleton"].append(j)
 
         # m = msgpack.packb(mychar)
         m = ujson.dumps(mychar)
@@ -284,8 +283,8 @@ class SbSceneWorkerTask(threading.Thread):
             elif cmd == 'get_update' and len(request) > 3:
                 charName = request[3]
                 response = self.get_character_bonedata(charName)
-            elif cmd == 'animate':
-                self.animate_brads()
+            # elif cmd == 'animate':
+            #     self.animate_brads()
             elif cmd == 'HELLO':
                 response = b"HELLO"
 
@@ -313,10 +312,10 @@ class TestSceneClientTask(threading.Thread):
         #        .format(socket.identity.decode("ascii"),
         #                reply.decode("ascii")))
 
-        socket.send(b"animate")
-        reply = socket.recv()
+        # socket.send(b"animate")
+        # reply = socket.recv()
 
-        for i in range(20):
+        for i in range(NUMBRADS):
             # tprint("{}: {}"
             #        .format(socket.identity.decode("ascii"),
             #                "Get updates"))
@@ -325,13 +324,13 @@ class TestSceneClientTask(threading.Thread):
             reply = socket.recv()
             tprint("{}: {}".format(socket.identity.decode("ascii"), reply))
 
-        for j in range(5):
-            socket.send_multipart([b"update", str(0.2)])
+        for j in range(10):
+            socket.send_multipart([b"update", str(0.1)])
             reply = socket.recv()
         #    tprint("{}: {}".format(socket.identity.decode("ascii"), reply))
         # socket.send_multipart([b"update", str(0.2)])
         # reply = socket.recv()
-        for i in range(20):
+        for i in range(NUMBRADS):
             # tprint("{}: {}"
             #        .format(socket.identity.decode("ascii"), "Get updates"))
             socket.send_multipart([b"get_update",
@@ -360,7 +359,7 @@ class SceneRouterTask(threading.Thread):
         # Only poll for requests from backend until workers are available
         poller.register(backend, zmq.POLLIN)
         while True:
-            tprint("Polling for connections...")
+            # tprint("Polling for connections...")
             sockets = dict(poller.poll())
             if backend in sockets:
                 # Handle worker activity on the backend

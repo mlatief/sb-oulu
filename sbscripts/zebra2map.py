@@ -5,14 +5,14 @@
 #
 
 
-def Zebra2map(scene):
+def Zebra2map(sc):
 
     # Mapping from Zebra2 skeleton to SmartBody skeleton
 
-    jointMapManager = scene.getJointMapManager()
-    zebra2Map = jointMapManager.getJointMap("zebra2")
-    if (zebra2Map == None):
-        zebra2Map = jointMapManager.createJointMap('zebra2')
+    jointMapManager = sc.getJointMapManager()
+    # zebra2Map = jointMapManager.getJointMap("zebra2")
+    # if (zebra2Map == None):
+    zebra2Map = jointMapManager.createJointMap('zebra2')
 
     # Core
     zebra2Map.setMapping("JtRoot", "base")
