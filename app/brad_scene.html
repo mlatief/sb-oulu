@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>three.js webgl - loading dear brad</title>
+        <title>three.js WebGL - Loading dear Brad</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <style>
@@ -23,7 +23,6 @@
             }
 
             a {
-
                 color: #f00;
             }
 
@@ -36,7 +35,7 @@
         <div id="controls"></div>
 
         <div id="info">
-            <a href="http://threejs.org" target="_blank">three.js</a> Dear Brad!
+            <a href="http://threejs.org" target="_blank">three.js</a>Dear Brad!
         </div>
 
         <script src="js/three.js"></script>
@@ -182,13 +181,13 @@
             }
 
             function initControls(){
-                bradControls = new function () {
+                bradControls = new function() {
                         this.bodyPosture = "ChrBrad@Idle01"; //ChrBrad@Guitar01
-                        
+
                         this.playBML = function(){
                             socket.emit('play bml', {'data': '<body posture="' + this.bodyPosture + '"/>'});
                         };
-                        
+
                         this.deltaTime = 0.016;
                         this.updateBrad = function(){
                             socket.emit('update', {'data': this.deltaTime.toFixed(3)});
